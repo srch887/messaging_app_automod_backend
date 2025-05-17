@@ -3,3 +3,5 @@
 /dockerfile
 /docker-compose.yaml
 /.env
+/notebook/.ipynb_checkpoints
+/notebook/offensive_speech_model
