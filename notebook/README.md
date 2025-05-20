@@ -1,2 +1,2 @@
 # Setup
-Just run the notebook to download the LLM model from huggingface
+Using huggingface models to create the automoderator
