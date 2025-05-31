@@ -1,6 +1,8 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import torch.nn.functional as F
+import warnings
+warnings.filterwarnings("ignore")
 
 def is_text_offensive(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True)
@@ -14,15 +16,13 @@ def is_text_offensive(text):
     return labels[predicted_class], probs.squeeze().tolist()
 
 model_name = "KoalaAI/OffensiveSpeechDetector"
+save_path = "../notebook/offensive_speech_model"
 
 if __name__ == '__main__':
-    # Load model and tokenizer from Hugging Face
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    # Load model and tokenizer from locally saved model
+    tokenizer = AutoTokenizer.from_pretrained(save_path)
+    model = AutoModelForSequenceClassification.from_pretrained(save_path)
+    
+    message = input()
 
-    # Save to local directory
-    save_path = "../notebook/offensive_speech_model"
-    tokenizer.save_pretrained(save_path)
-    model.save_pretrained(save_path)
-
-    print(is_text_offensive("you are")[0])
+    print(is_text_offensive(message)[0])
