@@ -1,9 +1,13 @@
 from fastapi import FastAPI, Request
+from pydantic import BaseModel
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch.nn.functional as F
 import torch
 
 app = FastAPI()
+
+class Message(BaseModel):
+    message: str
 
 # Load model ONCE at startup
 model_path = "../notebook/offensive_speech_model"
@@ -11,9 +15,9 @@ tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
 @app.post("/moderate")
-async def moderate(request: Request):
-    body = await request.json()
-    text = body.get("text", "")
+
+async def moderate(message: Message):
+    text = message.message
 
     inputs = tokenizer(text, return_tensors="pt", truncation=True)
     with torch.no_grad():

@@ -2,6 +2,7 @@ require('.')
 const pool = require('../database/config.js')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const axios = require('axios')
 const { getSocketIO } = require("../socket/socket");
 const { spawnSync } = require('child_process');
 
@@ -15,44 +16,90 @@ exports.postMessage = async (req, res) => {
     const ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress
 
     try {
-        const python = spawnSync('python', ['./messenger/automod.py'], {
-            stdio: 'pipe',
-            encoding: 'utf-8',
-            input: message
-        })
+        result = await axios.post(url = 'http://127.0.0.1:8000/moderate', data = { 'message': message })
 
-        output = python.output[1].trim()
+        // const python = spawnSync('python', ['./messenger/automod.py'], {
+        //     stdio: 'pipe',
+        //     encoding: 'utf-8',
+        //     input: message
+        // })
 
-        if (output === 'False') {
-            await pool.query("INSERT INTO content.messages (email, username, message, ip_address) VALUES ($1, $2, $3, $4)", [email, username, message, ipAddress]);
+        // output = python.output[1].trim()
 
-            const result = await pool.query("SELECT * FROM content.messages ORDER BY date_time DESC");
-            const newMessage = result.rows[0];
+        // if (output === 'False') {
+        //     await pool.query("INSERT INTO content.messages (email, username, message, ip_address) VALUES ($1, $2, $3, $4)", [email, username, message, ipAddress]);
 
-            console.log(newMessage)
+        //     const result = await pool.query("SELECT * FROM content.messages ORDER BY date_time DESC");
+        //     const newMessage = result.rows[0];
 
-            // Emit the new message to all connected clients
-            const io = getSocketIO();
-            io.emit("newMessage", newMessage);
+        //     console.log(newMessage)
 
-            return res.status(201).send("Message added");
-        } else if (output === 'True') {
-            const now = new Date();
-            const formatter = new Intl.DateTimeFormat('en-US', {
-                timeZone: 'Asia/Kolkata', // e.g., IST
-                dateStyle: 'full',
-                timeStyle: 'long'
-            });
+        //     // Emit the new message to all connected clients
+        //     const io = getSocketIO();
+        //     io.emit("newMessage", newMessage);
 
-            const io = getSocketIO();
-            io.emit("newMessage", {
-                email: email,
-                username: username,
-                message: '<i>Offensive language detected</i>',        
-                datetime: formatter.format(now)
-            })
+        //     return res.status(201).send("Message added");
+        // } else if (output === 'True') {
+        //     const now = new Date();
+        //     const formatter = new Intl.DateTimeFormat('en-US', {
+        //         timeZone: 'Asia/Kolkata', // e.g., IST
+        //         dateStyle: 'full',
+        //         timeStyle: 'long'
+        //     });
 
-            return res.status(201).send("Offensive language detected");
+        //     const io = getSocketIO();
+        //     io.emit("newMessage", {
+        //         email: email,
+        //         username: username,
+        //         message: '<i>Offensive language detected</i>',        
+        //         datetime: formatter.format(now)
+        //     })
+
+        //     return res.status(201).send("Offensive language detected");
+        // } else {
+        //     const io = getSocketIO();
+        //     io.emit("newMessage", 'Error');
+
+        //     throw new Error("Error validating message")
+        // }
+
+        if (result?.data) {
+            if (result?.data?.offensive == true) {
+                const now = new Date();
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone: 'Asia/Kolkata', // e.g., IST
+                    dateStyle: 'full',
+                    timeStyle: 'long'
+                });
+
+                const io = getSocketIO();
+                io.emit("newMessage", {
+                    email: email,
+                    username: username,
+                    message: '<i>Offensive language detected</i>',
+                    datetime: formatter.format(now)
+                })
+
+                return res.status(201).send("Offensive language detected");
+            } else if (result?.data?.offensive == false) {
+                await pool.query("INSERT INTO content.messages (email, username, message, ip_address) VALUES ($1, $2, $3, $4)", [email, username, message, ipAddress]);
+
+                const result = await pool.query("SELECT * FROM content.messages ORDER BY date_time DESC");
+                const newMessage = result.rows[0];
+
+                console.log(newMessage)
+
+                // Emit the new message to all connected clients
+                const io = getSocketIO();
+                io.emit("newMessage", newMessage);
+
+                return res.status(201).send("Message added");
+            } else {
+                const io = getSocketIO();
+                io.emit("newMessage", 'Error');
+
+                throw new Error("Error validating message")
+            }
         } else {
             const io = getSocketIO();
             io.emit("newMessage", 'Error');
