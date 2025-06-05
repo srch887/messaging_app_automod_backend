@@ -18,6 +18,6 @@ This is the backend service for a messaging board application, built with **Node
 
 | Layer          | Technology                        |
 |----------------|------------------------------------|
-| Backend        | Node.js (Express)                  |
+| Backend        | Node.js (Express) + Python (FastAPI + pytorch)                |
 | Database       | PostgreSQL                         |
 | Moderation     | [KoalaAI/OffensiveSpeechDetector](https://huggingface.co/KoalaAI/OffensiveSpeechDetector) |
