@@ -14,8 +14,11 @@ model_path = "../notebook/offensive_speech_model"
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
-@app.post("/moderate")
+@app.get("/")
+def health_check():
+    return {"status": "ok"}
 
+@app.post("/moderate")
 async def moderate(message: Message):
     text = message.message
 
